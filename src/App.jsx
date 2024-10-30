@@ -1,35 +1,45 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Routes, Route } from 'react-router-dom';
+import Layout from './components/Layout/Layout';
+import { Suspense, lazy, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { refreshUser } from './redux/auth/operations';
+import { selectIsRefreshing } from './redux/auth/selectors';
+import RestrictedRoute from './components/RestrictedRoute/RestrictedRoute'
+import PrivateRoute from './components/PrivateRoute/PrivateRoute';
+import { Toaster } from 'react-hot-toast';
 
-function App() {
-  const [count, setCount] = useState(0)
+const HomePage = lazy(() => import("./pages/HomePage/HomePage"));
+const RegistrationPage= lazy(() => import("./pages/RegistrationPage/RegistrationPage"));
+const LoginPage = lazy(() => import("./pages/LoginPage/LoginPage"));
+const ContactsPage = lazy(() => import("./pages/ContactsPage/ContactsPage"));
 
-  return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
 
-export default App
+ const App=() =>{
+  const dispatch = useDispatch();
+ const isRefreshing = useSelector(selectIsRefreshing)
+
+  useEffect(() => {
+    dispatch(refreshUser());
+  }, [dispatch]);
+
+  return isRefreshing ? (
+    <b>Please wait, updating user info...</b>
+  ) : (
+    <Layout>
+      <Suspense fallback={null}>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/register" element={
+              <RestrictedRoute component={<RegistrationPage />} redirectTo="/" />
+            }
+          />
+        <Route path="/login" element={<RestrictedRoute component={<LoginPage />} redirectTo="/contacts"/>} />
+            <Route path="/contacts" element={<PrivateRoute component={<ContactsPage />} redirectTo="/login" />} />
+        </Routes>
+        </Suspense>
+        <Toaster />
+    </Layout>
+  );
+ }
+
+export default App;
